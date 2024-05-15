@@ -8,7 +8,8 @@ https://blog.csdn.net/Javachichi/article/details/131871627
        窄依赖： 一个Rdd的分依赖于父RDD的一个分区，这样各个分区之间就可以并行执行
 
 2： Spark的两种操作
-     transformation ： 惰性求值，就是我们只有执行action的时候才会真正触发RDD
+     transformation ： 惰性求值，就是我们只有执行action的时候才会真正触发RDD   reducebykey它不是一个action操作 会对相同的key 规约但是
+      返回的是一个新的RDD
      action  : 一般是stage之间action就是对数据进行处理会触发transformation的操作
 
 3. Spark的两种Shuffle   shuffle 就是在transform 和 action 之间的执行  也就是在两个stage之间进行执行 action需要将相同的key进行处理比如reducebykey 那么我们肯定是要把相同的key放入同一个分区进行计算的这也就是shuffle的作用
@@ -46,7 +47,7 @@ D 代表Dataset
 分区列表、分区函数、最佳位置，这三个属性其实说的就是数据集在哪，在哪计算更合适，如何分区；
 计算函数、依赖关系，这两个属性其实说的是数据集怎么来的。
 4： 持久化  persist cache checkpoint
-
+cahe调用了persist peiesit可以设置缓存的级别
  
 7： SparkStraming
 采用的是Dstream
@@ -55,5 +56,27 @@ D 代表Dataset
 8 :structedStreming 可以处理更加细微的流式数据 他是使用无界表的方式
 遇到一个数据就可以将其加入无界表的尾部，然后进行实时sql的查询
 -采用DataFrame
+
+9: spark的优点
+  1： 调度算法 基于DAG 的调度算法实现了spark
+  2.  lineage 提供了容错机制
 ```
-       
+
+10: Spark为什么要作持久化
+1： 由于linage系统的存在Spark其实需要在复杂步骤中进行persist暂存到磁盘中，如果丢失数据可以恢复
+2： 具体来说 我们需要在一些复杂的操作前后及逆行persist,如shuffle操作要在前后进行pressit进行存储
+
+11： join操作调优
+通过广播连接的方式进行连接，主要是用于小表连接大表即mapper-join 通过将小表放入内存中广播到大表中去，与大表的每个部分进行连接
+而如果是reduce-join shuffle join 的话将两个相同的键进行排序，然后将相同的键发送到reduce中进行处理，这种操作会有耗时
+
+12 block 和 partition的区别
+block 是 hdfs 上的最小分块单位 存储的视觉去看
+partition 是RDD的组成部分 大小不一 从计算的视角去看
+
+13： sortedshuffle 和 hashshuffle 的区别
+sortedshuffle比较适合处理大型数据集
+  sorted shuffle产生的磁盘文件的较少有合并的过程并且它传输到分区中的数据是有序的  方便某些任务的执行
+hashshuffle 比较适合处理小型或中型数据集
+  hashshuffle 会产生大量的小的磁盘空间因为上一个任务的每一个task都要为下一个任务的所有task进行创造一休哥小的磁盘文件
+14 ： RDD 不可变性 分部性 弹性
